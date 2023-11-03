@@ -1,3 +1,4 @@
 langchain
 openai
 deeplake
+tiktoken
