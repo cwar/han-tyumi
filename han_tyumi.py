@@ -1,10 +1,8 @@
-import deeplake
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.vectorstores import DeepLake
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
-import os
 import streamlit as st
 
 dataset_path = st.secrets['DATASET_PATH']
