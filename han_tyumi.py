@@ -7,13 +7,13 @@ from langchain.chat_models import ChatOpenAI
 import os
 import streamlit as st
 
-dataset_path = os.environ.get('DATASET_PATH')
+dataset_path = st.secrets['DATASET_PATH']
 
 qa = None
 
 # Load the API keys from environment variables
-openai_api_key = os.environ.get('OPENAI_API_KEY')
-activeloop_token = os.environ.get('ACTIVELOOP_TOKEN')
+openai_api_key = st.secrets['OPENAI_API_KEY']
+activeloop_token = st.secrets['ACTIVELOOP_TOKEN']
 
 # Check if the environment variables exist
 if openai_api_key is None:
