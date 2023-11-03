@@ -40,7 +40,7 @@ chain_type_kwargs = {"prompt": PROMPT}
 
 def get_qa(qa):
     if qa is None:
-        db = DeepLake(dataset_path = dataset_path, embedding_function=embedding)
+        db = DeepLake(dataset_path = dataset_path, embedding_function=embedding, lock_enabled=False)
         qa = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-3.5-turbo-16k'), chain_type="stuff", retriever=db.as_retriever(), verbose=True, chain_type_kwargs=chain_type_kwargs)
     return qa
 
