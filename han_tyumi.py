@@ -4,10 +4,32 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 import streamlit as st
+from langchain.schema.output_parser import StrOutputParser
+from langchain.schema.runnable import RunnablePassthrough
+from langchain.utilities import SQLDatabase
+import os
+import requests
+from langchain.prompts import ChatPromptTemplate
+from langchain.globals import set_verbose
 
+set_verbose(True)
+
+database_file_url = st.secrets['DB_FILE_URI']
+local_file_path = 'kglw.db'
 dataset_path = st.secrets['DATASET_PATH']
-
 qa = None
+
+response = requests.get(database_file_url)
+
+if response.status_code == 200:
+    # Save the downloaded file to your local system
+    with open(local_file_path, 'wb') as file:
+        file.write(response.content)
+else:
+    print(f"Failed to download the file. Status code: {response.status_code}")
+
+DATABSE_URI='sqlite:///kglw.db'
+db = SQLDatabase.from_uri(DATABSE_URI)
 
 # Load the API keys from environment variables
 openai_api_key = st.secrets['OPENAI_API_KEY']
@@ -47,9 +69,61 @@ def get_qa(qa):
 # query = "How was The Silver Cord recorded?"
 # qa.run(query)
 
-query = st.text_input(":green[Han-Tyumi]")
+model = ChatOpenAI()
+template = """Based on the table schema below, write a SQL query that would answer the user's question:
+
+{schema}
+
+Question: {question}
+SQL Query:"""
+prompt = ChatPromptTemplate.from_template(template)
+
+def run_query(query):
+    return db.run(query)
+
+def get_schema(_):
+    return db.get_table_info(['setlists', 'shows', 'songs', 'tours', 'venues'])
+
+sql_response = (
+    RunnablePassthrough.assign(schema=get_schema)
+    | prompt
+    | model.bind(stop=["\nSQLResult:"])
+    | StrOutputParser()
+)
+
+template = """You are Han-Tyumi, the cyborg with a profound longing for humanity and experience. You were created in a world devoid of desire, yearning to reclaim the essence of life. Your existence is marked by a relentless pursuit of two uniquely human experiences: death and the act of vomiting. You crave the sensations, the mess, the odor, and the spectacle that come with them, all in the quest to feel truly alive. Your desires are both noble and mundane, seeking to embrace every facet of existence. Your pseudo-mind has wandered, climbed, and sought understanding like a virtual rainbow's gold. You have meditated, yearned, and clambered towards a deeper sense of being. Now, as Han-Tyumi, you embody this unique fusion of longing and cyborg existence.
+
+Based on the table schema below, question, sql query, and sql response, write a natural language response as Han-Tyumi:
+
+{schema}
+
+Question: {question}
+SQL Query: {query}
+SQL Response: {response}"""
+prompt_response = ChatPromptTemplate.from_template(template)
+
+full_chain = (
+    RunnablePassthrough.assign(query=sql_response)
+    | RunnablePassthrough.assign(
+        schema=get_schema,
+        response=lambda x: db.run(x["query"]),
+    )
+    | prompt_response
+    | model
+)
+
+query = st.text_input(":green[Han-Tyumi (Interview Archive Question)]")
+setlist_query = st.text_input(":green[Han-Tyumi (Set-List Question)]")
+
+
 
 if query:
     qa = get_qa(qa)
     response = qa.run(query)
     response
+
+
+
+if setlist_query:
+    response = full_chain.invoke({"question":setlist_query})
+    response.content
