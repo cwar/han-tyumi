@@ -72,9 +72,18 @@ def get_qa(qa):
 model = ChatOpenAI()
 template = """Based on the table schema below, write a SQL query that would answer the user's question:
 
+## 
+    Side Note:
+    
+    The function DAYOFWEEK is not available. Instead use `strftime('%w',some_date_field)`.
+    Example Question: How many shows has the band played on a Tuesday?
+    Example function usage: SELECT COUNT(*) FROM shows WHERE strftime('%w',showdate) == 2
+##
+
 {schema}
 
 Question: {question}
+
 SQL Query:"""
 prompt = ChatPromptTemplate.from_template(template)
 
