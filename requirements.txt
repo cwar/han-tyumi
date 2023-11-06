@@ -2,3 +2,4 @@ langchain
 openai
 deeplake
 tiktoken
+openai[embeddings]
