@@ -69,15 +69,16 @@ def get_qa(qa):
 # query = "How was The Silver Cord recorded?"
 # qa.run(query)
 
-model = ChatOpenAI(model="gpt-4-1106-preview")
+model = ChatOpenAI()
 template = """Based on the table schema below, write a SQL query that would answer the user's question:
 
 ## 
     Side Note:
     
     The function DAYOFWEEK is not available. Instead use `strftime('%w',some_date_field)`.
-    Example Question: How many shows has the band played on a Tuesday?
-    Example function usage: SELECT COUNT(*) FROM shows WHERE strftime('%w',showdate) == 2
+    Example:
+        Question: How many shows has the band played on a Tuesday?
+        SQL Query: SELECT COUNT(*) FROM shows WHERE strftime('%w',showdate) == 2
 ##
 
 {schema}
@@ -118,20 +119,16 @@ full_chain = (
         response=lambda x: db.run(x["query"]),
     )
     | prompt_response
-    | model
+    | ChatOpenAI(model='gpt-4-1106-preview')
 )
 
 query = st.text_input(":green[Han-Tyumi (Interview Archive Question)]")
 setlist_query = st.text_input(":green[Han-Tyumi (Set-List Question)]")
 
-
-
 if query:
     qa = get_qa(qa)
     response = qa.run(query)
     response
-
-
 
 if setlist_query:
     response = full_chain.invoke({"question":setlist_query})
