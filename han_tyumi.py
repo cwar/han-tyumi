@@ -10,9 +10,9 @@ from langchain.utilities import SQLDatabase
 import os
 import requests
 from langchain.prompts import ChatPromptTemplate
-from langchain.globals import set_verbose
+from langchain.globals import set_debug
 
-set_verbose(True)
+set_debug(True)
 
 database_file_url = st.secrets['DB_FILE_URI']
 local_file_path = 'kglw.db'
@@ -70,16 +70,29 @@ def get_qa(qa):
 # qa.run(query)
 
 model = ChatOpenAI()
-template = """Based on the table schema below, write a SQL query that would answer the user's question:
+template = """You have access to a database for setlist data for the band King Gizzard & The Wizard Lizard.
+
+Based on the table schema below, write a SQL query that would answer the user's question:
 
 ## 
-    Side Note:
+    Side Notes:
     
-    The function DAYOFWEEK is not available. Instead use `strftime('%w',some_date_field)`.
-    Example:
-        Question: How many shows has the band played on a Tuesday?
-        SQL Query: SELECT COUNT(*) FROM shows WHERE strftime('%w',showdate) == 2
+        The function DAYOFWEEK is not available. Instead use `strftime('%w',some_date_field)`.
+        Example:
+            Question: How many shows has the band played on a Tuesday?
+            SQL Query: SELECT COUNT(*) FROM shows WHERE strftime('%w',showdate) == 2
+
+        There is no need to filter by the bands name, all the data is for one band. Avoid filtering by the bands name this may cause errors.
+
+    Example Questions and Queries:
+        Question: How many times has the band opened with Perihelion?
+        Sql Query: select count(*) from setlists sl join songs so on sl.song_id = so.id where so.name = "perihelion" and sl.position=1
+
+        Question: What was the full setlist for the show on 10-26-2022?
+        Sql query:  select so.name, sl.position from shows sh join setlists sl on sh.id = sl.show_id join songs so on sl.song_id = so.id where showdate="2022-10-26" order by sl.position
 ##
+
+
 
 {schema}
 
