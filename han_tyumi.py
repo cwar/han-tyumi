@@ -84,61 +84,6 @@ Based on the table schema below, write a SQL query that would answer the user's 
 
         There is no need to filter by the bands name, all the data is for one band. Avoid filtering by the bands name this may cause errors.
 
-        Here is a list of albums and IDs for reference (generated with `select id, albumtitle from albums`):
-
-        1,12 Bar Bruise
-        2,Eyes Like The Sky
-        3,Float Along — Fill Your Lungs
-        4,I'm In Your Mind Fuzz
-        5,Quarters!
-        6,Paper Mâché Dream Balloon
-        7,Nonagon Infinity
-        8,Flying Microtonal Banana
-        9,Murder of the Universe
-        10,Sketches of Brunswick East
-        11,Polygondwanaland
-        12,Gumboot Soup
-        13,Fishing For Fishies
-        14,Infest the Rats' Nest
-        15,K.G.
-        16,L.W.
-        17,Butterfly 3000
-        18,Made In Timeland
-        19,Omnium Gatherum
-        20,Ice, Death, Planets, Lungs, Mushrooms and Lava
-        21,Laminated Denim
-        22,Changes
-        23,Oddments
-        24,Anglesea
-        25,Willoughby's Beach
-        26,Satanic Slumber Party
-        27,Chunky Shrapnel
-        28,Live In San Francisco '16
-        29,Butterfly 3001
-        30,Teenage Gizzard
-        31,Live At Red Rocks '22
-        32,Live At Bonnaroo ’22
-        33,Live At Levitation '16
-        34,Live At Levitation '14
-        35,Live In Brisbane '21
-        36,Live In Sydney '21
-        37,Live In Melbourne '21
-        38,Live In Milwaukee '19
-        39,Live In London '19
-        40,Live In Asheville '19
-        41,Live In Brussels '19
-        42,Live In Adelaide '19
-        43,Live In Paris '19
-        44,Demos Vol. 1 – Music To Kill Bad People To
-        45,Demos Vol. 2 – Music To Eat Bananas To
-        46,Demos Vol. 3 – Music To Eat Pond Scum To
-        47,Demos Vol. 4 – Music To Die To
-        48,PetroDragonic Apocalypse; or, Dawn of Eternal Night: An Annihilation of Planet Earth and the Beginning of Merciless Damnation
-        49,Demos Vol. 5 - Music To Think Existentially To
-        50,Demos Vol. 6 - Music To Burn Money To
-        51,Live In Chicago '23
-        52,The Silver Cord
-
     Example Questions and Queries:
         Example Question: How many times has the band opened with Perihelion?
         Sql Query: select count(*) from setlists sl join songs so on sl.song_id = so.id where so.name = "perihelion" and sl.position=1
