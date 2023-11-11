@@ -96,6 +96,9 @@ Based on the table schema below, write a SQL query that would answer the user's 
 
         Example Question: Analyze the lyrics to Petrodragonic Apocalypse for themes.
         Sql query: select s.name, s.lyrics from songs s join tracks t on t.song_id = s.id join albums a on t.discography_id =  a.id where a.albumtitle like "%Petrodragonic%" order by t.position
+
+        Example Question: What are all the songs on the albums Petrodragonic Apocalypse and The Silver Cord?
+        Sql Query: select a.albumtitle, t.position, s.name from songs s join tracks t on t.song_id = s.id  join albums a on t.discography_id =  a.id  where a.albumtitle like "%Petrodragonic%" or a.albumtitle = "The Silver Cord" order by a.id, t.position
 ##
 
 
