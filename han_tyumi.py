@@ -5,7 +5,7 @@ from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 import streamlit as st
 from langchain.schema.output_parser import StrOutputParser
-from langchain.schema.runnable import RunnablePassthrough
+from langchain.schema.runnable import RunnablePassthrough, RunnableBranch, RunnableLambda
 from langchain.utilities import SQLDatabase
 import os
 import requests
@@ -60,7 +60,8 @@ PROMPT = PromptTemplate(
 
 chain_type_kwargs = {"prompt": PROMPT}
 
-def get_qa(qa):
+def get_qa():
+    global qa
     if qa is None:
         db = DeepLake(dataset_path = dataset_path, embedding=embedding, lock_enabled=False)
         qa = RetrievalQA.from_chain_type(llm=ChatOpenAI(model='gpt-4-1106-preview'), chain_type="stuff", retriever=db.as_retriever(), verbose=True, chain_type_kwargs=chain_type_kwargs)
@@ -134,7 +135,7 @@ SQL Query: {query}
 SQL Response: {response}"""
 prompt_response = ChatPromptTemplate.from_template(template)
 
-full_chain = (
+setlist_db_chain = (
     RunnablePassthrough.assign(query=sql_response)
     | RunnablePassthrough.assign(
         schema=get_schema,
@@ -144,14 +145,47 @@ full_chain = (
     | ChatOpenAI(model='gpt-4-1106-preview')
 )
 
-query = st.text_input(":green[Han-Tyumi (Interview Archive Question)]")
-setlist_query = st.text_input(":green[Han-Tyumi (Set-List Question)]")
+query = st.text_input(":green[Han-Tyumi]")
+
+topic_chain = (
+    PromptTemplate.from_template(
+        """Given the user question below, classify it as either being about `Lyrics`, `SetListData`, `InterviewData` or `Other`.
+                                     
+        Do not respond with more than one word.
+
+        <question>
+        {question}
+        </question>
+
+        Classification:"""
+    )
+    | ChatOpenAI()
+    | StrOutputParser()
+)
+
+def query_interview_data(query):
+    get_qa()
+    response = qa.run(query["question"])
+    return response
+
+qa_runnable = RunnableLambda(query_interview_data)
+
+branch = RunnableBranch(
+    (lambda x: "lyrics" in x["topic"].lower(), setlist_db_chain),
+    (lambda x: "setlistdata" in x["topic"].lower(), setlist_db_chain),
+    (lambda x: "interviewdata" in x["topic"].lower(), qa_runnable),
+    qa_runnable
+)
+
+full_chain = (
+    {"topic": topic_chain, "question": lambda x: x["question"]} 
+    | branch
+)
 
 if query:
-    qa = get_qa(qa)
-    response = qa.run(query)
-    response
-
-if setlist_query:
-    response = full_chain.invoke({"question":setlist_query})
-    response.content
+    response = full_chain.invoke({"question":query})
+    if hasattr(response, 'content'):
+        response_text = response.content
+    else:
+        response_text = response
+    response_text
