@@ -73,11 +73,16 @@ def get_qa():
 model = ChatOpenAI()
 template = """You have access to a database for setlist data for the band King Gizzard & The Wizard Lizard.
 
-Based on the table schema below, write a SQL query that would answer the user's question (do not answer the example questions):
+Based on the table schema below, write a SQL query (sqlite database) that would answer the user's question (do not answer the example questions):
 
 ## 
     Side Notes:
-    
+
+        The function DATEDIFF is not available. Instead, use the `JulianDay` function in conjunction with subtraction to do date arithmetic.
+        Example:
+            Example Question: How many days has it been since the band was last played Straws in the Wind?
+            SQL Query: select JulianDay('now') - MAX(JulianDay(showdate)) from shows sh join setlists se on se.show_id = sh.id join songs so on (se.song_id = so.id) where so.name = 'Straws In The Wind'
+
         The function DAYOFWEEK is not available. Instead use `strftime('%w',some_date_field)`.
         Example:
             Example Question: How many shows has the band played on a Tuesday?
@@ -100,6 +105,9 @@ Based on the table schema below, write a SQL query that would answer the user's 
 
         Example Question: What are all the songs on the albums Petrodragonic Apocalypse and The Silver Cord?
         Sql Query: select a.albumtitle, t.position, s.name from songs s join tracks t on t.song_id = s.id  join albums a on t.discography_id =  a.id  where a.albumtitle like "%Petrodragonic%" or a.albumtitle = "The Silver Cord" order by a.id, t.position
+
+        Example Question: What are the biggest bustouts (by days)?
+        Sql Query: WITH SongPlayDates AS (SELECT s.id AS song_id, sh.showdate AS last_played_date, LAG(sh.showdate) OVER (PARTITION BY s.id ORDER BY sh.showdate) AS prev_played_date FROM songs s LEFT JOIN setlists sl ON s.id = sl.song_id JOIN shows sh ON sl.show_id = sh.id) SELECT s.id AS song_id, s.name AS song_name, MAX(julianday(sp.last_played_date) - julianday(sp.prev_played_date)) AS largest_gap_days FROM SongPlayDates sp JOIN songs s ON sp.song_id = s.id GROUP BY sp.song_id ORDER BY largest_gap_days DESC
 ##
 
 
