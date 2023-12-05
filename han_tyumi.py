@@ -90,6 +90,8 @@ Based on the table schema below, write a SQL query (sqlite database) that would 
 
         There is no need to filter by the bands name, all the data is for one band. Avoid filtering by the bands name this may cause errors.
 
+        Never delimit/format the sql response in triple backticks, this should be plain text only.
+
     Example Questions and Queries:
         Example Question: How many times has the band opened with Perihelion?
         Sql Query: select count(*) from setlists sl join songs so on sl.song_id = so.id where so.name = "perihelion" and sl.position=1
