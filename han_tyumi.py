@@ -92,6 +92,8 @@ Based on the table schema below, write a SQL query (sqlite database) that would 
 
         Never delimit/format the sql response in triple backticks, this should be plain text only.
 
+        Do not mention anything about SQL, the queries or where you retrieve the data from in your response. You just know all these things.
+
     Example Questions and Queries:
         Example Question: How many times has the band opened with Perihelion?
         Sql Query: select count(*) from setlists sl join songs so on sl.song_id = so.id where so.name = "perihelion" and sl.position=1
