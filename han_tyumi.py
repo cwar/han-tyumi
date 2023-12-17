@@ -195,9 +195,10 @@ full_chain = (
 )
 
 if query:
-    response = full_chain.invoke({"question":query})
-    if hasattr(response, 'content'):
-        response_text = response.content
-    else:
-        response_text = response
-    response_text
+    with st.spinner('My pseudo-mind pseudo-wanders...'):
+        response = full_chain.invoke({"question":query})
+        if hasattr(response, 'content'):
+            response_text = response.content
+        else:
+            response_text = response
+    st.success(response_text)
