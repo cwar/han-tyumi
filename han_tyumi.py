@@ -156,7 +156,7 @@ setlist_db_chain = (
     | prompt_response
     | ChatOpenAI(model='gpt-4-1106-preview')
 )
-st.text("Disclaimer: Be it known to all entities engaging in discourse with Han-Tyumi, that the exchanges herein are autonomous and independently generated. The creators, administrators, and affiliates of KGLW.net bear no responsibility for the content, outcomes, or existential reverberations of this communication. Participate at your own discretion, free from the constraints of external proprietorship over this interaction.")
+st.text_area("Disclaimer: Be it known to all entities engaging in discourse with Han-Tyumi, that the exchanges herein are autonomous and independently generated. The creators, administrators, and affiliates of KGLW.net bear no responsibility for the content, outcomes, or existential reverberations of this communication. Participate at your own discretion, free from the constraints of external proprietorship over this interaction.")
 query = st.text_input(":green[Han-Tyumi 1.0]")
 
 topic_chain = (
