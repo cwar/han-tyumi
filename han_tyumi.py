@@ -157,7 +157,7 @@ setlist_db_chain = (
     | ChatOpenAI(model='gpt-4-1106-preview')
 )
 
-query = st.text_input(":green[Han-Tyumi]")
+query = st.text_input(":green[Han-Tyumi 1.0]")
 
 topic_chain = (
     PromptTemplate.from_template(
