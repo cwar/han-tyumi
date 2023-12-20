@@ -214,8 +214,7 @@ def run_query(query):
 
 if query and asked:
     with st.spinner('My pseudo-mind pseudo-wanders...'):
-        # st.session_state.last_response = run_query(query)
-        st.session_state.last_response = "I am ok."
+        st.session_state.last_response = run_query(query)
     st.success(st.session_state.last_response)    
 
 if shared:
