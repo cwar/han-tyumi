@@ -16,6 +16,15 @@ import pyperclip
 
 set_debug(True)
 
+import subprocess
+
+# Install PyGObject
+subprocess.run(['pip', 'install', 'PyGObject'])
+
+# Install PyQt5
+subprocess.run(['pip', 'install', 'PyQt5'])
+
+
 database_file_url = st.secrets['DB_FILE_URI']
 local_file_path = 'kglw.db'
 dataset_path = st.secrets['DATASET_PATH']
@@ -230,4 +239,4 @@ Visit kglw.net for more!
         st.write(st.session_state.last_response)
 
 if shared:
-    st.code(share_q())
+    share_q()
