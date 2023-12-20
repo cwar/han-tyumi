@@ -202,7 +202,7 @@ def have_response():
 with st.container():
     query = st.text_area(":green[Han-Tyumi [1.0]]")
     asked = st.button("Ask")
-shared = st.button("Share", disabled=False)
+shared = st.button("Share", disabled=True)
 
 def run_query(query):
     response = full_chain.invoke({"question":query})
