@@ -214,17 +214,20 @@ def run_query(query):
 
 if query and asked:
     with st.spinner('My pseudo-mind pseudo-wanders...'):
-        st.session_state.last_response = run_query(query)
+        # st.session_state.last_response = run_query(query)
+        st.session_state.last_response = "I am ok."
     st.success(st.session_state.last_response)    
 
-if shared:
+def share_q():
     if 'last_response' not in st.session_state:
         st.toast("Ask a question first")
     else:
         pyperclip.copy("""Question: """ + query + """
 Response: """ +  st.session_state.last_response + """
-
 Visit kglw.net for more!
 """)
         st.toast("Copied to clipboard.")
         st.write(st.session_state.last_response)
+
+if shared:
+    st.code(share_q())
