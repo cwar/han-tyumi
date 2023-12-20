@@ -11,6 +11,8 @@ import os
 import requests
 from langchain.prompts import ChatPromptTemplate
 from langchain.globals import set_debug
+import pyperclip
+
 
 set_debug(True)
 
@@ -156,7 +158,8 @@ setlist_db_chain = (
     | prompt_response
     | ChatOpenAI(model='gpt-4-1106-preview')
 )
-query = st.text_area(":green[Han-Tyumi 1.0]")
+
+
 
 topic_chain = (
     PromptTemplate.from_template(
@@ -193,11 +196,36 @@ full_chain = (
     | branch
 )
 
-if query:
+def have_response():
+    return "last_response" in st.session_state
+
+with st.container():
+    query = st.text_area(":green[Han-Tyumi [1.0]]")
+    asked = st.button("Ask")
+shared = st.button("Share")
+
+def run_query(query):
+    response = full_chain.invoke({"question":query})
+    if hasattr(response, 'content'):
+        response_text = response.content
+    else:
+        response_text = response
+    return response_text
+
+if query and asked:
     with st.spinner('My pseudo-mind pseudo-wanders...'):
-        response = full_chain.invoke({"question":query})
-        if hasattr(response, 'content'):
-            response_text = response.content
-        else:
-            response_text = response
-    st.success(response_text)
+        # st.session_state.last_response = run_query(query)
+        st.session_state.last_response = "I am ok."
+    st.success(st.session_state.last_response)    
+
+if shared:
+    if 'last_response' not in st.session_state:
+        st.toast("Ask a question first")
+    else:
+        pyperclip.copy("""Question: """ + query + """
+Response: """ +  st.session_state.last_response + """
+
+Visit kglw.net for more!
+""")
+        st.toast("Copied to clipboard.")
+        st.write(st.session_state.last_response)

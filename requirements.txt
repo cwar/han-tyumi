@@ -2,3 +2,4 @@ langchain
 openai==0.28.1
 deeplake
 tiktoken
+pyperclip
