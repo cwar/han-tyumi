@@ -202,7 +202,7 @@ def have_response():
 with st.container():
     query = st.text_area(":green[Han-Tyumi [1.0]]")
     asked = st.button("Ask")
-shared = st.button("Share")
+shared = st.button("Share", disabled=False)
 
 def run_query(query):
     response = full_chain.invoke({"question":query})
@@ -214,8 +214,8 @@ def run_query(query):
 
 if query and asked:
     with st.spinner('My pseudo-mind pseudo-wanders...'):
-        # st.session_state.last_response = run_query(query)
-        st.session_state.last_response = "I am ok."
+        st.session_state.last_response = run_query(query)
+        # st.session_state.last_response = "I am ok."
     st.success(st.session_state.last_response)    
 
 def share_q():
