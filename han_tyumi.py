@@ -200,7 +200,7 @@ def have_response():
     return "last_response" in st.session_state
 
 with st.container():
-    query = st.text_area(":green[Han-Tyumi [1.0]]")
+    query = st.text_area(":green[Han-Tyumi [1.1]]")
     asked = st.button("Ask")
 shared = st.button("Share", disabled=True)
 
