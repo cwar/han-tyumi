@@ -11,7 +11,6 @@ import os
 import requests
 from langchain.prompts import ChatPromptTemplate
 from langchain.globals import set_debug
-import pyperclip
 
 
 set_debug(True)
@@ -202,7 +201,7 @@ def have_response():
 with st.container():
     query = st.text_area(":green[Han-Tyumi [1.1]]")
     asked = st.button("Ask")
-shared = st.button("Share", disabled=True)
+# shared = st.button("Share", disabled=True)
 
 def run_query(query):
     response = full_chain.invoke({"question":query})
@@ -218,16 +217,16 @@ if query and asked:
         # st.session_state.last_response = "I am ok."
     st.success(st.session_state.last_response)    
 
-def share_q():
-    if 'last_response' not in st.session_state:
-        st.toast("Ask a question first")
-    else:
-        pyperclip.copy("""Question: """ + query + """
-Response: """ +  st.session_state.last_response + """
-Visit kglw.net for more!
-""")
-        st.toast("Copied to clipboard.")
-        st.write(st.session_state.last_response)
+# def share_q():
+#     if 'last_response' not in st.session_state:
+#         st.toast("Ask a question first")
+#     else:
+#         pyperclip.copy("""Question: """ + query + """
+# Response: """ +  st.session_state.last_response + """
+# Visit kglw.net for more!
+# """)
+#         st.toast("Copied to clipboard.")
+#         st.write(st.session_state.last_response)
 
-if shared:
-    share_q()
+# if shared:
+#     share_q()
