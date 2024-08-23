@@ -3,6 +3,5 @@ base="dark"
 primaryColor="#51ff4b"
 textColor="#2c690b"
 font="monospace"
-=======
 [server]
 headless = true
