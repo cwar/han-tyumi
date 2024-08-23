@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "han-tyumi"
+version = "0.1.0"
+description = ""
+authors = ["Chris <cwarren13@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+streamlit = "^1.37.1"
+langchain = "^0.2.14"
+openai = "^1.40.0"
+deeplake = "^3.9.18"
+tiktoken = "^0.7.0"
+langchain-community = "^0.2.12"
+langchain-openai = "^0.1.22"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
