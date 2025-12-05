@@ -30,7 +30,7 @@ def load_database(database_file_url, local_file_path):
         raise RuntimeError(f"Failed to download database. Status code: {response.status_code}")
 
 
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def initialize_database():
     database_file_url = st.secrets['DB_FILE_URI']
     local_file_path = 'kglw.db'
@@ -48,17 +48,17 @@ def initialize_database():
                 raise RuntimeError("Failed to initialize database after multiple retries") from e
 
 
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def get_llm():
     return ChatOpenAI(model='gpt-4-turbo')
 
 
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def get_embeddings():
     return OpenAIEmbeddings(model="text-embedding-ada-002")
 
 
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def get_vector_store():
     dataset_path = st.secrets['DATASET_PATH']
     return DeepLake(dataset_path=dataset_path, embedding=get_embeddings(), read_only=True)
