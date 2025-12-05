@@ -1,8 +1,14 @@
+import logging
 import os
 import requests
 import sqlalchemy
 import streamlit as st
 import time
+import warnings
+
+# Suppress noisy library warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="deeplake")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="langchain")
 
 os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 os.environ["ACTIVELOOP_TOKEN"] = st.secrets["ACTIVELOOP_TOKEN"]
@@ -10,9 +16,37 @@ os.environ["ACTIVELOOP_TOKEN"] = st.secrets["ACTIVELOOP_TOKEN"]
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough, RunnableBranch, RunnableLambda
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from langchain_community.utilities import SQLDatabase
 from langchain_community.vectorstores import DeepLake
+from langchain_core.callbacks import BaseCallbackHandler
+
+# Configure logging
+logging.basicConfig(
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    datefmt="%H:%M:%S",
+    level=logging.INFO
+)
+logger = logging.getLogger("han_tyumi")
+
+# Suppress noisy HTTP request logging
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+
+
+class TokenCounter(BaseCallbackHandler):
+    """Callback to track token usage across LLM calls."""
+    def __init__(self):
+        self.total_tokens = 0
+        self.prompt_tokens = 0
+        self.completion_tokens = 0
+
+    def on_llm_end(self, response, **kwargs):
+        if response.llm_output and "token_usage" in response.llm_output:
+            usage = response.llm_output["token_usage"]
+            self.prompt_tokens += usage.get("prompt_tokens", 0)
+            self.completion_tokens += usage.get("completion_tokens", 0)
+            self.total_tokens += usage.get("total_tokens", 0)
 
 MAX_RETRIES = 3
 RETRY_DELAY = 1
@@ -153,14 +187,64 @@ SQL Response: {{response}}""")
     )
 
 
-def build_interview_chain():
+def build_casual_chain():
+    """Simple chain for casual conversation - no data lookup needed."""
     llm = get_llm()
-    vector_store = get_vector_store()
-    retriever = vector_store.as_retriever(search_kwargs={"k": 5})
 
     prompt = ChatPromptTemplate.from_template(f"""{HAN_TYUMI_PERSONA}
 
-Use the following pieces of context to answer the question at the end. Feel free to speculate and get weird if the question is open ended, but if its looking for specific data driven answers you can reply that you dont know.
+The human has sent you a casual message or question that doesn't require looking up any specific data about King Gizzard & The Lizard Wizard. Respond in character as Han-Tyumi.
+
+Question: {{question}}
+
+Answer in voice of Han-Tyumi:""")
+
+    return prompt | llm | StrOutputParser()
+
+
+def get_interview_context(question):
+    """Retrieve context from the interview archive."""
+    vector_store = get_vector_store()
+    retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+    docs = retriever.invoke(question)
+    return "\n\n".join(doc.page_content for doc in docs)
+
+
+def get_lyrics_context(question):
+    """Retrieve lyrics from the SQL database based on the question."""
+    llm = get_llm()
+
+    lyrics_prompt = ChatPromptTemplate.from_template("""Based on the user's question about King Gizzard & The Lizard Wizard, write a SQL query to retrieve relevant lyrics.
+
+The database has these relevant tables:
+- songs: id, name, lyrics
+- albums: id, albumtitle
+- tracks: song_id, discography_id (links to albums.id), position
+
+Write a query to get song names and lyrics that would be relevant to answering the question.
+Return ONLY the SQL query, no explanation. Use LIKE with wildcards for flexible matching.
+
+Question: {question}
+
+SQL Query:""")
+
+    sql_chain = lyrics_prompt | llm | StrOutputParser()
+    query = sql_chain.invoke({"question": question})
+
+    try:
+        result = execute_sql(query)
+        return result if result else ""
+    except Exception:
+        return ""
+
+
+def build_interview_chain():
+    """Chain for questions about band members, opinions, stories from interviews."""
+    llm = get_llm()
+
+    prompt = ChatPromptTemplate.from_template(f"""{HAN_TYUMI_PERSONA}
+
+Use the following pieces of context from interviews and articles to answer the question. Feel free to speculate and get weird if the question is open ended, but if its looking for specific data driven answers you can reply that you dont know.
 
 {{context}}
 
@@ -168,61 +252,122 @@ Question: {{question}}
 
 Answer in voice of Han-Tyumi:""")
 
-    def format_docs(docs):
-        return "\n\n".join(doc.page_content for doc in docs)
+    def get_context(inputs):
+        return get_interview_context(inputs["question"])
 
     return (
-        {"context": retriever | format_docs, "question": RunnablePassthrough()}
+        RunnablePassthrough.assign(context=get_context)
         | prompt
         | llm
         | StrOutputParser()
     )
 
 
-def build_router_chain():
+def build_lore_chain():
+    """Chain for lore/thematic questions - combines lyrics AND interview context."""
     llm = get_llm()
 
-    topic_chain = (
-        PromptTemplate.from_template(
-            """Given the user question below, classify it as either being about `Lyrics`, `SetListData`, `InterviewData` or `Other`.
+    prompt = ChatPromptTemplate.from_template(f"""{HAN_TYUMI_PERSONA}
 
-        Do not respond with more than one word.
+Use the following context to answer the question about King Gizzard & The Lizard Wizard's lore, themes, or concepts. You have access to both lyrics and interview/article content.
 
-        <question>
-        {question}
-        </question>
+LYRICS:
+{{lyrics_context}}
 
-        Classification:"""
-        )
+INTERVIEWS & ARTICLES:
+{{interview_context}}
+
+Question: {{question}}
+
+Answer in voice of Han-Tyumi, weaving together insights from both the lyrics and what the band has said:""")
+
+    def get_combined_context(inputs):
+        question = inputs["question"]
+        return {
+            "lyrics_context": get_lyrics_context(question),
+            "interview_context": get_interview_context(question),
+            "question": question
+        }
+
+    return (
+        RunnableLambda(get_combined_context)
+        | prompt
         | llm
         | StrOutputParser()
     )
 
-    sql_chain = build_sql_chain()
-    interview_chain = build_interview_chain()
-
-    def run_interview(x):
-        return interview_chain.invoke(x["question"])
-
-    branch = RunnableBranch(
-        (lambda x: "lyrics" in x["topic"].lower(), sql_chain),
-        (lambda x: "setlistdata" in x["topic"].lower(), sql_chain),
-        (lambda x: "interviewdata" in x["topic"].lower(), RunnableLambda(run_interview)),
-        RunnableLambda(run_interview)
-    )
-
-    return (
-        {"topic": topic_chain, "question": lambda x: x["question"]}
-        | branch
-    )
-
 
 def ask_han_tyumi(question):
-    chain = build_router_chain()
-    response = chain.invoke({"question": question})
+    start_time = time.time()
+    token_counter = TokenCounter()
+    llm = get_llm()
+
+    # First, classify the question
+    classify_start = time.time()
+    topic_chain = (
+        PromptTemplate.from_template(
+            """You are classifying questions for a King Gizzard & The Lizard Wizard chatbot. Classify the question into ONE category:
+
+- `Casual`: Greetings, jokes, off-topic questions, general chat not about the band (e.g. "how's it going?", "tell me a joke", "what's the weather?")
+- `SetlistData`: Questions about shows, concerts, tour dates, what songs were played when, venue info, statistics about performances (e.g. "when did they last play Robot Stop?", "what was the setlist on 10/26/2022?")
+- `Lore`: Questions about album concepts, storylines, themes, characters, the Gizzverse, meaning behind songs (e.g. "explain Murder of the Universe", "who is Han-Tyumi?", "what's the connection between albums?")
+- `Interview`: Questions about band members personally, their opinions, recording process, gear, stories (e.g. "who is the coolest member?", "how was Nonagon Infinity recorded?")
+- `Lyrics`: Questions specifically asking about or for lyrics, what words are in a song (e.g. "what are the lyrics to Rattlesnake?")
+
+Respond with ONLY the category name, nothing else.
+
+<question>
+{question}
+</question>
+
+Classification:"""
+        )
+        | llm
+        | StrOutputParser()
+    )
+    category = topic_chain.invoke({"question": question}, config={"callbacks": [token_counter]}).strip()
+    classify_time = time.time() - classify_start
+
+    logger.info(f"Question: {question[:100]}{'...' if len(question) > 100 else ''}")
+    logger.info(f"Category: {category} (classified in {classify_time:.2f}s)")
+
+    # Route to appropriate chain
+    chain_start = time.time()
+    category_lower = category.lower()
+
+    if "casual" in category_lower:
+        chain = build_casual_chain()
+        response = chain.invoke({"question": question}, config={"callbacks": [token_counter]})
+    elif "setlistdata" in category_lower:
+        chain = build_sql_chain()
+        response = chain.invoke({"question": question}, config={"callbacks": [token_counter]})
+    elif "lore" in category_lower:
+        chain = build_lore_chain()
+        response = chain.invoke({"question": question}, config={"callbacks": [token_counter]})
+    elif "interview" in category_lower:
+        chain = build_interview_chain()
+        response = chain.invoke({"question": question}, config={"callbacks": [token_counter]})
+    elif "lyrics" in category_lower:
+        chain = build_sql_chain()
+        response = chain.invoke({"question": question}, config={"callbacks": [token_counter]})
+    else:
+        chain = build_interview_chain()
+        response = chain.invoke({"question": question}, config={"callbacks": [token_counter]})
+
+    chain_time = time.time() - chain_start
+    total_time = time.time() - start_time
+
     if hasattr(response, 'content'):
-        return response.content
-    return response
+        response_text = response.content
+    else:
+        response_text = response
+
+    logger.info(f"Response: {response_text[:100]}{'...' if len(response_text) > 100 else ''}")
+    logger.info(f"Timing: classify={classify_time:.2f}s, chain={chain_time:.2f}s, total={total_time:.2f}s")
+    logger.info(f"Tokens: prompt={token_counter.prompt_tokens}, completion={token_counter.completion_tokens}, total={token_counter.total_tokens}")
+    logger.info("-" * 60)
+
+    return response_text
 
 
 # UI
