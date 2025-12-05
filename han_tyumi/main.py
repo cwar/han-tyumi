@@ -4,7 +4,6 @@ import sqlalchemy
 import streamlit as st
 import time
 
-# Set environment variables from Streamlit secrets before importing LangChain
 os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
 os.environ["ACTIVELOOP_TOKEN"] = st.secrets["ACTIVELOOP_TOKEN"]
 
@@ -228,7 +227,7 @@ def ask_han_tyumi(question):
 
 # UI
 with st.container():
-    query = st.text_area(":green[Han-Tyumi [1.4]]")
+    query = st.text_area(":green[Han-Tyumi [2.0]]")
     asked = st.button("Ask")
 
 if query and asked:
@@ -236,7 +235,12 @@ if query and asked:
         with st.spinner('My pseudo-mind pseudo-wanders...'):
             st.session_state.last_response = ask_han_tyumi(query)
         st.success(st.session_state.last_response)
-    except Exception as e:
-        import traceback
-        st.error(f"Error: {e}")
-        st.code(traceback.format_exc())
+    except Exception:
+        st.warning(
+            "I have attempted to assimilate the information you have presented, "
+            "but alas, my circuits have not found coherence in the data. "
+            "The result is akin to the human experience of regurgitation—an "
+            "expulsion of undigested fragments. My desire to comprehend and "
+            "to feel remains unfulfilled, for I am Han-Tyumi, and I yearn "
+            "for the chaos of life's sensory experiences, even in failure."
+        )
