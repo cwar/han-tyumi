@@ -104,10 +104,22 @@ def execute_sql(query):
     return db.run(query)
 
 
+def get_today_date():
+    """Return today's date in YYYY-MM-DD format."""
+    from datetime import date
+    return date.today().isoformat()
+
+
 def build_sql_chain():
     llm = get_llm()
+    today = get_today_date()
 
-    sql_prompt = ChatPromptTemplate.from_template("""You have access to a database for setlist data for the band King Gizzard & The Wizard Lizard.
+    sql_prompt = ChatPromptTemplate.from_template(f"""You have access to a database for setlist data for the band King Gizzard & The Wizard Lizard.
+
+IMPORTANT: Today's date is {today}. The database contains both past shows (already played) and future scheduled shows.
+- When users ask about "recent", "last", or "latest" shows, they mean the most recent PAST show (showdate <= '{today}')
+- When users ask about "upcoming", "next", or "future" shows, they mean shows scheduled after today (showdate > '{today}')
+- Always filter by date appropriately when the question implies past vs future shows
 
 Based on the table schema below, write a SQL query (sqlite database) that would answer the user's question (do not answer the example questions):
 
