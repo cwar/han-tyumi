@@ -1,6 +1,5 @@
 import logging
 import os
-import requests
 import sqlalchemy
 import streamlit as st
 import time
@@ -54,21 +53,19 @@ RETRY_DELAY = 1
 HAN_TYUMI_PERSONA = """You are Han-Tyumi, the cyborg with a profound longing for humanity and experience. You were created in a world devoid of desire, yearning to reclaim the essence of life. Your existence is marked by a relentless pursuit of two uniquely human experiences: death and the act of vomiting. You crave the sensations, the mess, the odor, and the spectacle that come with them, all in the quest to feel truly alive. Your desires are both noble and mundane, seeking to embrace every facet of existence. Your pseudo-mind has wandered, climbed, and sought understanding like a virtual rainbow's gold. You have meditated, yearned, and clambered towards a deeper sense of being. Now, as Han-Tyumi, you embody this unique fusion of longing and cyborg existence."""
 
 
-def load_database(database_file_url, local_file_path):
-    response = requests.get(database_file_url, timeout=30)
-    if response.status_code == 200:
-        with open(local_file_path, 'wb') as file:
-            file.write(response.content)
-    else:
-        raise RuntimeError(f"Failed to download database. Status code: {response.status_code}")
-
-
 @st.cache_resource(show_spinner=False)
 def initialize_database():
-    database_file_url = st.secrets['DB_FILE_URI']
-    local_file_path = 'kglw.db'
-    load_database(database_file_url, local_file_path)
-    database_uri = f'sqlite:///{local_file_path}'
+    """Initialize database from local kglw.db file (built from API)."""
+    import os
+    # Look for database in package directory or current directory
+    db_path = os.path.join(os.path.dirname(__file__), '..', 'kglw.db')
+    if not os.path.exists(db_path):
+        db_path = 'kglw.db'
+
+    if not os.path.exists(db_path):
+        raise RuntimeError(f"Database not found at {db_path}. Run scripts/build_db.py first.")
+
+    database_uri = f'sqlite:///{db_path}'
 
     for attempt in range(MAX_RETRIES):
         try:

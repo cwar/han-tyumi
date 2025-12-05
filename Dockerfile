@@ -10,4 +10,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY . .
 RUN uv sync --frozen --no-dev
 
-CMD ["uv", "run", "streamlit", "run", "han_tyumi/main.py"]
+# Make start script executable
+RUN chmod +x /app/scripts/start.sh
+
+# Build DB at startup (fetches fresh data from API)
+CMD ["/app/scripts/start.sh"]
